@@ -1,0 +1,17 @@
+*.pth
+*.ckpt
+*__pycache__*
+*.pyc
+*egg*
+*src/*
+*.ipynb
+logs/*
+*delete*
+eval_results*
+*.idea*
+*.pytorch
+scripts/*
+*build*
+*output*
+taming*
+logs

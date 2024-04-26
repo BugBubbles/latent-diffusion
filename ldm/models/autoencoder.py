@@ -30,6 +30,8 @@ class VQModel(pl.LightningModule):
                  use_ema=False
                  ):
         super().__init__()
+        # enable for multiple optimizers
+        self.automatic_optimization = False
         self.embed_dim = embed_dim
         self.n_embed = n_embed
         self.image_key = image_key
@@ -139,28 +141,50 @@ class VQModel(pl.LightningModule):
             x = x.detach()
         return x
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
         # https://github.com/pytorch/pytorch/issues/37142
         # try not to fool the heuristics
         x = self.get_input(batch, self.image_key)
         xrec, qloss, ind = self(x, return_pred_indices=True)
 
-        if optimizer_idx == 0:
+        # if optimizer_idx == 0:
+        #     # autoencode
+        #     aeloss, log_dict_ae = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
+        #                                     last_layer=self.get_last_layer(), split="train",
+        #                                     predicted_indices=ind)
+
+        #     self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        #     return aeloss
+
+        # if optimizer_idx == 1:
+        #     # discriminator
+        #     discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
+        #                                     last_layer=self.get_last_layer(), split="train")
+        #     self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        #     return discloss
+        opt_ae, opt_dis = self.optimizers()
+        def ae_closure():
             # autoencode
-            aeloss, log_dict_ae = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
+            aeloss, log_dict_ae = self.loss(qloss, x, xrec, 0, self.global_step,
                                             last_layer=self.get_last_layer(), split="train",
                                             predicted_indices=ind)
 
             self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
-            return aeloss
-
-        if optimizer_idx == 1:
+            opt_ae.zero_grad()
+            self.manual_backward(aeloss)
+            opt_ae.step()
+        def dis_closure():
             # discriminator
             discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True)
-            return discloss
+            opt_dis.zero_grad()
+            self.manual_backward(discloss)
+            opt_dis.step()
 
+        opt_ae.step(closure=ae_closure)
+        if batch_idx % 4 == 0 :
+          opt_dis.step(closure=dis_closure)   
     def validation_step(self, batch, batch_idx):
         log_dict = self._validation_step(batch, batch_idx)
         with self.ema_scope():
@@ -294,6 +318,8 @@ class AutoencoderKL(pl.LightningModule):
                  monitor=None,
                  ):
         super().__init__()
+        # enable for multiple optimizers
+        self.automatic_optimization = False
         self.image_key = image_key
         self.encoder = Encoder(**ddconfig)
         self.decoder = Decoder(**ddconfig)
@@ -348,26 +374,49 @@ class AutoencoderKL(pl.LightningModule):
         x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).float()
         return x
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
         reconstructions, posterior = self(inputs)
-
-        if optimizer_idx == 0:
+        opt_ae, opt_dis = self.optimizers()
+        def ae_closure():
             # train encoder+decoder+logvar
-            aeloss, log_dict_ae = self.loss(inputs, reconstructions, posterior, optimizer_idx, self.global_step,
+            aeloss, log_dict_ae = self.loss(inputs, reconstructions, posterior, 0, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log("aeloss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
             self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
-            return aeloss
-
-        if optimizer_idx == 1:
+            opt_ae.zero_grad()
+            self.manual_backward(aeloss)
+            opt_ae.step()
+        def dis_closure():
             # train the discriminator
-            discloss, log_dict_disc = self.loss(inputs, reconstructions, posterior, optimizer_idx, self.global_step,
+            discloss, log_dict_disc = self.loss(inputs, reconstructions, posterior, 1, self.global_step,
                                                 last_layer=self.get_last_layer(), split="train")
 
             self.log("discloss", discloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
             self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=False)
-            return discloss
+            opt_dis.zero_grad()
+            self.manual_backward(discloss)
+            opt_dis.step()
+        # if optimizer_idx == 0:
+        #     # train encoder+decoder+logvar
+        #     aeloss, log_dict_ae = self.loss(inputs, reconstructions, posterior, optimizer_idx, self.global_step,
+        #                                     last_layer=self.get_last_layer(), split="train")
+        #     self.log("aeloss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        #     self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
+        #     return aeloss
+
+        # if optimizer_idx == 1:
+        #     # train the discriminator
+        #     discloss, log_dict_disc = self.loss(inputs, reconstructions, posterior, optimizer_idx, self.global_step,
+        #                                         last_layer=self.get_last_layer(), split="train")
+
+        #     self.log("discloss", discloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        #     self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=False)
+        #     return discloss
+        # for ae trainer step
+        opt_ae.step(closure=ae_closure)
+        if batch_idx % 4 == 0 :
+          opt_dis.step(closure=dis_closure)   
 
     def validation_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
@@ -382,7 +431,7 @@ class AutoencoderKL(pl.LightningModule):
         self.log_dict(log_dict_ae)
         self.log_dict(log_dict_disc)
         return self.log_dict
-
+    
     def configure_optimizers(self):
         lr = self.learning_rate
         opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
