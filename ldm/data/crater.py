@@ -46,7 +46,6 @@ class KaguyuDTM(Dataset):
         cat_crop = cat_crop.resize(self.crop_sz)
         if self.augment_s:
             cat_crop = vt.rand_flip(cat_crop, p=0.5)
-            cat_crop = vt.rand_flip(cat_crop, p=0.5)
         if self.augment_t:
             cat_crop = vt.rand_reverse(cat_crop, p=0.5)
         cat_crop = np.array(cat_crop, dtype=np.float32).squeeze()[:, :, : self.channels]
@@ -103,5 +102,3 @@ if __name__ == "__main__":
     )
     for i, data in enumerate(dataset):
         print(data.shape)
-        if i > 10:
-            break
