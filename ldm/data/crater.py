@@ -29,10 +29,12 @@ class KaguyuDTM(Dataset):
 
     def __len__(self):
         return self.h_crop * self.w_crop * len(self.data)
+        return self.h_crop * self.w_crop * len(self.data)
 
     def _prepare(self):
         raise NotImplementedError
 
+    def _reader(self, path, h_idx, w_idx):
     def _reader(self, path, h_idx, w_idx):
         cat = Image.open(path)
         cat_crop = cat.crop(
@@ -46,7 +48,12 @@ class KaguyuDTM(Dataset):
         cat_crop = cat_crop.resize(self.crop_sz)
         if self.augment_s:
             cat_crop = vt.rand_flip(cat_crop, p=0.5)
+            cat_crop = vt.rand_flip(cat_crop, p=0.5)
         if self.augment_t:
+            cat_crop = vt.rand_reverse(cat_crop, p=0.5)
+        cat_crop = np.array(cat_crop, dtype=np.float32).squeeze()[:, :, : self.channels]
+        cat_crop = cat_crop / 127.5 - 1.0
+        return {"image": cat_crop, "h_idx": h_idx, "w_idx": w_idx, "path": path}
             cat_crop = vt.rand_reverse(cat_crop, p=0.5)
         cat_crop = np.array(cat_crop, dtype=np.float32).squeeze()[:, :, : self.channels]
         cat_crop = cat_crop / 127.5 - 1.0
@@ -93,8 +100,25 @@ class DTM_Test(KaguyuDTM):
         return data
 
 
+class DTM_Test(KaguyuDTM):
+
+    def _prepare(self):
+        data = []
+        with open(join(self.db_dir, "val.txt")) as f:
+            for line in map(lambda x: x.strip(), f):
+                data.append(join(self.db_dir, line))
+        with open(join(self.db_dir, "train.txt")) as f:
+            for line in map(lambda x: x.strip(), f):
+                data.append(join(self.db_dir, line))
+        return data
+
+
 if __name__ == "__main__":
     dataset = DTM_Validate(
+        db_dir="/disk527/sdb1/a804_cbf/datasets/lunar_crater/textures",
+        channels=3,
+        augment_s=False,
+        augment_t=False,
         db_dir="/disk527/sdb1/a804_cbf/datasets/lunar_crater/textures",
         channels=3,
         augment_s=False,
