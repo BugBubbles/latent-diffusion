@@ -10,7 +10,7 @@ model:
     loss_type: l1
     first_stage_key: "image"
     cond_stage_key: "image"
-    image_size: 32
+    image_size: 30
     channels: 4
     cond_stage_trainable: False
     concat_mode: False
@@ -29,7 +29,7 @@ model:
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
-        image_size: 32
+        image_size: 30
         in_channels: 4
         out_channels: 4
         model_channels: 192
@@ -65,17 +65,35 @@ model:
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 96
-    num_workers: 5
-    wrap: False
+    batch_size: 1
+    wrap: True
     train:
-      target: ldm.data.lsun.LSUNChurchesTrain
+      target: ldm.data.crater.DTM_Train
       params:
-        size: 256
+        db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
+        channels: 3
+        shape: [960,960]
+        crop_sz: [240,240]
+
     validation:
-      target: ldm.data.lsun.LSUNChurchesValidation
+      target: ldm.data.crater.DTM_Validate
       params:
-        size: 256
+        db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
+        channels: 3
+        shape: [960,960]
+        crop_sz: [240,240]
+        augment_s: False
+        augment_t: False
+    
+    test:
+      target: ldm.data.crater.DTM_Test
+      params:
+        db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
+        channels: 3
+        shape: [960,960]
+        crop_sz: [240,240]
+        augment_s: False
+        augment_t: False
 
 lightning:
   callbacks:
@@ -89,3 +107,4 @@ lightning:
 
   trainer:
     benchmark: True
+    accumulate_grad_batches: 1
