@@ -10,7 +10,7 @@ model:
     loss_type: l1
     first_stage_key: "image"
     cond_stage_key: "image"
-    image_size: 30
+    image_size: 64
     channels: 4
     cond_stage_trainable: False
     concat_mode: False
@@ -29,16 +29,14 @@ model:
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
-        image_size: 30
+        image_size: 64
         in_channels: 4
         out_channels: 4
-        model_channels: 192
-        attention_resolutions: [ 1, 2, 4, 8 ]   # 32, 16, 8, 4
+        model_channels: 224
+        attention_resolutions: [ 8,4,2 ]   # 32, 16, 8, 4
         num_res_blocks: 2
-        channel_mult: [ 1,2,2,4,4 ]  # 32, 16, 8, 4, 2
-        num_heads: 8
-        use_scale_shift_norm: True
-        resblock_updown: True
+        channel_mult: [ 1,2,3,4 ]  # 32, 16, 8, 4, 2
+        num_head_channels: 8
 
     first_stage_config:
       target: ldm.models.autoencoder.AutoencoderKL
@@ -48,12 +46,12 @@ model:
         ckpt_path: /disk527/Datadisk/xdy_cbf/pretrained/models/first_stage_models/kl-f8/model.ckpt
         ddconfig:
           double_z: True
-          z_channels: 8
-          resolution: 240
+          z_channels: 4
+          resolution: 256
           in_channels: 3
           out_ch: 3
           ch: 128
-          ch_mult: [ 1,2,4,4 ]  # num_down = len(ch_mult)-1
+          ch_mult: [ 1,2,4 ]  # num_down = len(ch_mult)-1
           num_res_blocks: 2
           attn_resolutions: [ ]
           dropout: 0.0
@@ -63,17 +61,17 @@ model:
     cond_stage_config: "__is_unconditional__"
 
 data:
-  target: main.DataModuleFromConfig
+  target: main.DataModuleFromConfig22222222222
   params:
-    batch_size: 1
-    wrap: True
+    batch_size: 12
     train:
       target: ldm.data.crater.DTM_Train
       params:
         db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
         channels: 3
         shape: [960,960]
-        crop_sz: [240,240]
+        crop_sz: [256,256]
+        crop_part: [4,4]
 
     validation:
       target: ldm.data.crater.DTM_Validate
@@ -81,7 +79,8 @@ data:
         db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
         channels: 3
         shape: [960,960]
-        crop_sz: [240,240]
+        crop_sz: [256,256]
+        crop_part: [4,4]
         augment_s: False
         augment_t: False
     
@@ -91,7 +90,8 @@ data:
         db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
         channels: 3
         shape: [960,960]
-        crop_sz: [240,240]
+        crop_sz: [256,256]
+        crop_part: [4,4]
         augment_s: False
         augment_t: False
 
