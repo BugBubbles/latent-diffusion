@@ -15,7 +15,7 @@ model:
     ddconfig:
       double_z: True
       z_channels: 8
-      resolution: 240
+      resolution: 256
       in_channels: 3
       out_ch: 3
       ch: 128
@@ -27,7 +27,7 @@ model:
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 7
+    batch_size: 2
     wrap: True
     train:
       target: ldm.data.crater.DTM_Train
@@ -35,7 +35,8 @@ data:
         db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
         channels: 3
         shape: [960,960]
-        crop_sz: [240,240]
+        crop_sz: [256,256]
+        crop_part: [4,4]
 
     validation:
       target: ldm.data.crater.DTM_Validate
@@ -43,7 +44,8 @@ data:
         db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
         channels: 3
         shape: [960,960]
-        crop_sz: [240,240]
+        crop_sz: [256,256]
+        crop_part: [4,4]
         augment_s: False
         augment_t: False
     
@@ -53,7 +55,8 @@ data:
         db_dir: /disk527/Datadisk/xdy_cbf/lunar_crater/textures
         channels: 3
         shape: [960,960]
-        crop_sz: [240,240]
+        crop_sz: [256,256]
+        crop_part: [4,4]
         augment_s: False
         augment_t: False
 

@@ -61,7 +61,7 @@ model:
     cond_stage_config: "__is_unconditional__"
 
 data:
-  target: main.DataModuleFromConfig22222222222
+  target: main.DataModuleFromConfig
   params:
     batch_size: 12
     train:
