@@ -1,5 +1,3 @@
-"""copy from https://github.com/danier97/LDMVFI"""
-
 import numpy as np
 from os.path import join
 from torch.utils.data import Dataset
@@ -95,13 +93,13 @@ class DTM_Test(KaguyuDTM):
 
 if __name__ == "__main__":
     dataset = DTM_Validate(
-        db_dir="/disk527/sdb1/a804_cbf/datasets/lunar_crater/textures",
+        db_dir="/disk527/Datadisk/xdy_cbf/lunar_crater/textures",
         channels=3,
         augment_s=False,
         augment_t=False,
     )
     for i, data in enumerate(dataset):
-        print(data['image'].shape)
+        print(data["image"].shape)
         import matplotlib.pyplot as plt
-        plt.imsave(f"test_{i}.png", (data['image'] + 1) / 2)
 
+        plt.imsave(f"test_{i}.png", (data["image"] + 1) / 2)
