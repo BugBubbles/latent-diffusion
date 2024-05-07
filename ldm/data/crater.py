@@ -19,7 +19,7 @@ class KaguyuDTM(Dataset):
         augment_t=True,
     ):
         self.h_crop, self.w_crop = crop_part[0], crop_part[1]
-        self.h_shape, self.w_shape = shape[0] // crop_sz[0], shape[1] // crop_sz[1]
+        self.h_shape, self.w_shape = shape[0] // crop_part[0], shape[1] // crop_part[1]
         self.crop_sz = crop_sz
         self.channels = channels
         self.augment_s = augment_s
@@ -101,4 +101,7 @@ if __name__ == "__main__":
         augment_t=False,
     )
     for i, data in enumerate(dataset):
-        print(data.shape)
+        print(data['image'].shape)
+        import matplotlib.pyplot as plt
+        plt.imsave(f"test_{i}.png", (data['image'] + 1) / 2)
+
